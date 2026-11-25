@@ -1,0 +1,69 @@
+# Kiddy Toys mijozlar ilovasini to'liq o'rnatadi/yangilaydi:
+#   1) Supabase server (baza, funksiyalar, Telegram bot, iBox sinxronlash)
+#   2) Sayt (GitHub Pages) — ilova va admin panel
+#   3) Android APK (GitHub Releases)
+# Yangilash: kiddy-mijoz-ilova.zip faylini yangisiga almashtiring — hammasi o'zi qayta o'rnatiladi.
+name: Ornatish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency: ornatish
+
+env:
+  SUPABASE_PROJECT_REF: ggzxhddogkdkfrfdnafz
+  ADMIN_NAME: "Ikromov"
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip -q kiddy-mijoz-ilova.zip -d app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Server (Supabase)
+        run: node app/deploy/server.mjs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          IBOX_TOKEN: ${{ secrets.IBOX_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          ADMIN_PHONE: ${{ secrets.ADMIN_PHONE }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/web
+
+  sayt:
+    needs: server
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
+
+  android:
+    needs: server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Android APK
+        run: unzip -q kiddy-mijoz-ilova.zip -d app && bash app/deploy/android.sh
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
