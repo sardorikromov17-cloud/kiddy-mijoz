@@ -3,6 +3,7 @@
 #   2) Sayt (GitHub Pages) — ilova va admin panel
 #   3) Android APK (GitHub Releases)
 # Yangilash: kiddy-mijoz-ilova.zip faylini yangisiga almashtiring — hammasi o'zi qayta o'rnatiladi.
+# overlay/ papkasidagi fayllar zip ustidan yoziladi (kichik tuzatishlar uchun).
 name: Ornatish
 
 on:
@@ -26,7 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: unzip -q kiddy-mijoz-ilova.zip -d app
+      - name: Ilova fayllari (zip + overlay/ dagi tuzatishlar)
+        run: unzip -q kiddy-mijoz-ilova.zip -d app && if [ -d overlay ]; then cp -r overlay/. app/; fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -63,7 +65,10 @@ jobs:
         with:
           node-version: 22
       - name: Android APK
-        run: unzip -q kiddy-mijoz-ilova.zip -d app && bash app/deploy/android.sh
+        run: |
+          unzip -q kiddy-mijoz-ilova.zip -d app
+          if [ -d overlay ]; then cp -r overlay/. app/; fi
+          bash app/deploy/android.sh
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           GH_TOKEN: ${{ github.token }}
